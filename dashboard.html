@@ -1,42 +1,42 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nutritional Insights</title>
-    <!-- Tailwind CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css" rel="stylesheet">
-    <!-- Chart.js CDN (added so the canvases can actually render charts) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
 <body class="bg-gray-100">
 
-    <header class="bg-blue-600 p-4 text-white">
+    <header class="bg-blue-600 p-4 text-white flex justify-between items-center">
         <h1 class="text-3xl font-semibold">Nutritional Insights</h1>
+        <div class="flex items-center gap-3">
+            <span id="userName" class="font-medium"></span>
+            <button onclick="logout()" class="bg-blue-800 hover:bg-blue-900 py-1 px-3 rounded text-sm">Logout</button>
+        </div>
     </header>
 
     <main class="container mx-auto p-6">
         <section class="mb-8">
             <h2 class="text-2xl font-semibold mb-4">Explore Nutritional Insights</h2>
+            <p id="metaLine" class="text-xs text-gray-500 mb-3"></p>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="bg-white p-4 shadow-lg rounded-lg">
                     <h3 class="font-semibold">Bar Chart</h3>
                     <p class="text-sm text-gray-600">Average macronutrient content by diet type.</p>
                     <canvas id="barChart" class="w-full h-48"></canvas>
                 </div>
-
                 <div class="bg-white p-4 shadow-lg rounded-lg">
                     <h3 class="font-semibold">Scatter Plot</h3>
                     <p class="text-sm text-gray-600">Nutrient relationships (e.g., protein vs carbs).</p>
                     <canvas id="scatterPlot" class="w-full h-48"></canvas>
                 </div>
-
                 <div class="bg-white p-4 shadow-lg rounded-lg">
                     <h3 class="font-semibold">Heatmap</h3>
                     <p class="text-sm text-gray-600">Nutrient correlations.</p>
-                    <div id="heatmap" class="w-full h-48"></div>
+                    <div id="heatmap" class="w-full h-48 overflow-auto text-xs"></div>
                 </div>
-
                 <div class="bg-white p-4 shadow-lg rounded-lg">
                     <h3 class="font-semibold">Pie Chart</h3>
                     <p class="text-sm text-gray-600">Recipe distribution by diet type.</p>
@@ -48,7 +48,7 @@
         <section class="mb-8">
             <h2 class="text-2xl font-semibold mb-4">Filters and Data Interaction</h2>
             <div class="flex flex-wrap gap-4">
-                <input id="dietSearch" type="text" placeholder="Search by Diet Type" class="p-2 border rounded w-full sm:w-auto">
+                <input id="searchInput" type="text" placeholder="Search by Diet Type or Recipe" class="p-2 border rounded w-full sm:w-auto">
                 <select id="dietSelect" class="p-2 border rounded w-full sm:w-auto">
                     <option value="all">All Diet Types</option>
                 </select>
@@ -58,175 +58,56 @@
         <section class="mb-8">
             <h2 class="text-2xl font-semibold mb-4">API Data Interaction</h2>
             <div class="flex flex-wrap gap-4">
-                <button id="getInsightsBtn" class="bg-blue-600 text-white py-2 px-4 rounded">Get Nutritional Insights</button>
-                <button id="getRecipesBtn" class="bg-green-600 text-white py-2 px-4 rounded">Get Recipes</button>
+                <button onclick="loadInsights()" class="bg-blue-600 text-white py-2 px-4 rounded">Get Nutritional Insights</button>
+                <button onclick="loadRecipes()" class="bg-green-600 text-white py-2 px-4 rounded">Get Recipes</button>
             </div>
-            <p id="metaInfo" class="text-sm text-gray-600 mt-2"></p>
+            <p id="apiStatus" class="text-xs text-gray-500 mt-2"></p>
+        </section>
+
+        <section class="mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Security & Compliance</h2>
+            <div class="bg-white p-4 shadow-lg rounded-lg">
+                <h3 class="font-semibold">Security Status</h3>
+                <p class="text-sm text-gray-600">Encryption: <span class="font-semibold text-green-600">Enabled (Azure Storage SSE)</span></p>
+                <p class="text-sm text-gray-600">Access Control: <span class="font-semibold text-green-600">JWT Session Required</span></p>
+                <p class="text-sm text-gray-600">Passwords: <span class="font-semibold text-green-600">Bcrypt Hashed</span></p>
+            </div>
+        </section>
+
+        <section class="mt-8">
+            <h2 class="text-2xl font-semibold mb-4">OAuth Integration</h2>
+            <div class="bg-white p-4 shadow-lg rounded-lg">
+                <h3 class="font-semibold">Signed in via</h3>
+                <p id="authProvider" class="text-sm text-gray-600"></p>
+            </div>
+        </section>
+
+        <section class="mb-8 mt-8">
+            <div class="bg-white shadow-lg rounded-lg overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-200 text-left">
+                        <tr><th class="p-2">Recipe</th><th class="p-2">Diet Type</th><th class="p-2">Cuisine</th><th class="p-2">Protein (g)</th></tr>
+                    </thead>
+                    <tbody id="recipeRows"></tbody>
+                </table>
+            </div>
         </section>
 
         <section>
             <h2 class="text-2xl font-semibold mb-4">Pagination</h2>
-            <div class="flex justify-center gap-2 mt-4">
-                <button id="prevBtn" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Previous</button>
-                <span id="pageLabel" class="px-3 py-1">Page 1</span>
-                <button id="nextBtn" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Next</button>
+            <div class="flex justify-center items-center gap-3 mt-4">
+                <button id="prevPageBtn" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Previous</button>
+                <span id="pageLabel" class="text-sm text-gray-600"></span>
+                <button id="nextPageBtn" class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400">Next</button>
             </div>
-            <table class="w-full text-sm text-left bg-white shadow rounded-lg mt-4">
-                <thead class="bg-gray-200">
-                    <tr>
-                        <th class="p-2">Diet Type</th>
-                        <th class="p-2">Recipe</th>
-                        <th class="p-2">Cuisine</th>
-                        <th class="p-2">Protein (g)</th>
-                    </tr>
-                </thead>
-                <tbody id="recipeTable"></tbody>
-            </table>
         </section>
     </main>
 
     <footer class="bg-blue-600 p-4 text-white text-center mt-10">
-        <p>&copy; 2025 Nutritional Insights. All Rights Reserved.</p>
+        <p>&copy; 2026 Nutritional Insights. All Rights Reserved.</p>
     </footer>
 
-    <script>
-        const API_URL = "https://diet-analysis-func-000960682.azurewebsites.net/api/nutritional-insights";
-
-        let data = null;
-        let barChart, pieChart, scatterChart;
-        let recipePage = 0;
-        const PAGE_SIZE = 5;
-
-        document.getElementById("getInsightsBtn").addEventListener("click", loadData);
-        document.getElementById("getRecipesBtn").addEventListener("click", () => {
-            if (data) renderRecipeTable();
-        });
-        document.getElementById("dietSelect").addEventListener("change", refreshAll);
-        document.getElementById("dietSearch").addEventListener("input", refreshAll);
-        document.getElementById("prevBtn").addEventListener("click", () => {
-            if (recipePage > 0) { recipePage--; renderRecipeTable(); }
-        });
-        document.getElementById("nextBtn").addEventListener("click", () => {
-            recipePage++; renderRecipeTable();
-        });
-
-        async function loadData() {
-            const response = await fetch(API_URL);
-            data = await response.json();
-
-            const select = document.getElementById("dietSelect");
-            data.avg_macros.forEach(row => {
-                const option = document.createElement("option");
-                option.value = row.Diet_type;
-                option.textContent = row.Diet_type;
-                select.appendChild(option);
-            });
-
-            document.getElementById("metaInfo").textContent =
-                `Execution time: ${data.metadata.execution_time_seconds}s | Recipes processed: ${data.metadata.total_recipes_processed}`;
-
-            refreshAll();
-        }
-
-        function refreshAll() {
-            if (!data) return;
-            const selected = document.getElementById("dietSelect").value;
-            const search = document.getElementById("dietSearch").value.toLowerCase();
-
-            const macros = data.avg_macros.filter(r =>
-                (selected === "all" || r.Diet_type === selected) &&
-                r.Diet_type.toLowerCase().includes(search)
-            );
-            const allowedDiets = macros.map(r => r.Diet_type);
-
-            drawBarChart(macros);
-            drawPieChart(data.diet_recipe_counts.filter(r => allowedDiets.includes(r.Diet_type)));
-            drawScatterChart(data.top_protein_recipes.filter(r => allowedDiets.includes(r.Diet_type)));
-            drawHeatmap(macros);
-
-            recipePage = 0;
-            renderRecipeTable();
-        }
-
-        function drawBarChart(macros) {
-            if (barChart) barChart.destroy();
-            barChart = new Chart(document.getElementById("barChart"), {
-                type: "bar",
-                data: {
-                    labels: macros.map(r => r.Diet_type),
-                    datasets: [
-                        { label: "Protein", data: macros.map(r => r["Protein(g)"]), backgroundColor: "blue" },
-                        { label: "Carbs", data: macros.map(r => r["Carbs(g)"]), backgroundColor: "green" },
-                        { label: "Fat", data: macros.map(r => r["Fat(g)"]), backgroundColor: "purple" }
-                    ]
-                },
-                options: { plugins: { legend: { position: "bottom" } } }
-            });
-        }
-
-        function drawPieChart(counts) {
-            if (pieChart) pieChart.destroy();
-            pieChart = new Chart(document.getElementById("pieChart"), {
-                type: "pie",
-                data: {
-                    labels: counts.map(r => r.Diet_type),
-                    datasets: [{ data: counts.map(r => r.recipe_count), backgroundColor: ["blue", "green", "purple", "red", "orange"] }]
-                }
-            });
-        }
-
-        function drawScatterChart(recipes) {
-            if (scatterChart) scatterChart.destroy();
-            scatterChart = new Chart(document.getElementById("scatterPlot"), {
-                type: "scatter",
-                data: {
-                    datasets: [{
-                        label: "Protein (g)",
-                        data: recipes.map((r, i) => ({ x: i, y: r["Protein(g)"] })),
-                        backgroundColor: "blue"
-                    }]
-                }
-            });
-        }
-
-        function drawHeatmap(macros) {
-            const container = document.getElementById("heatmap");
-            if (!macros.length) { container.innerHTML = "<p class='text-gray-500 text-sm'>No data</p>"; return; }
-            const max = Math.max(...macros.flatMap(r => [r["Protein(g)"], r["Carbs(g)"], r["Fat(g)"]]));
-
-            let html = "<table class='w-full text-xs'><tr><th>Diet</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr>";
-            macros.forEach(r => {
-                const cell = (val) => {
-                    const shade = Math.round((val / max) * 200);
-                    return `<td style="background: rgb(${255 - shade},${255 - shade},255)">${val}</td>`;
-                };
-                html += `<tr><td>${r.Diet_type}</td>${cell(r["Protein(g)"])}${cell(r["Carbs(g)"])}${cell(r["Fat(g)"])}</tr>`;
-            });
-            container.innerHTML = html + "</table>";
-        }
-
-        function renderRecipeTable() {
-            const selected = document.getElementById("dietSelect").value;
-            const recipes = selected === "all"
-                ? data.top_protein_recipes
-                : data.top_protein_recipes.filter(r => r.Diet_type === selected);
-
-            const start = recipePage * PAGE_SIZE;
-            const pageRows = recipes.slice(start, start + PAGE_SIZE);
-
-            document.getElementById("recipeTable").innerHTML = pageRows.map(r => `
-                <tr class="border-t">
-                    <td class="p-2">${r.Diet_type}</td>
-                    <td class="p-2">${r.Recipe_name}</td>
-                    <td class="p-2">${r.Cuisine_type}</td>
-                    <td class="p-2">${r["Protein(g)"]}</td>
-                </tr>
-            `).join("");
-
-            document.getElementById("pageLabel").textContent =
-                `Page ${recipePage + 1} of ${Math.max(1, Math.ceil(recipes.length / PAGE_SIZE))}`;
-        }
-    </script>
-
+<script src="auth.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

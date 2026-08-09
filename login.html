@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><title>Login</title></head>
+<body>
+<h2>Nutritional Insights — Sign In</h2>
+<form id="f">
+  <input id="name" placeholder="Name (register only)"><br><br>
+  <input id="email" placeholder="Email" required><br><br>
+  <input id="password" type="password" placeholder="Password" required><br><br>
+  <button type="submit">Login</button>
+  <button type="button" id="regBtn">Switch to Register</button>
+</form>
+<br>
+<a href="https://diet-analysis-func-bose29445.azurewebsites.net/api/auth/oauth/github/start">Login with GitHub</a>
+
+<script src="auth.js"></script>
+<script>
+let mode = "login";
+document.getElementById("regBtn").onclick = function() {
+  mode = mode === "login" ? "register" : "login";
+  document.getElementById("regBtn").textContent = mode === "login" ? "Switch to Register" : "Switch to Login";
+};
+document.getElementById("f").onsubmit = async function(e) {
+  e.preventDefault();
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const name = document.getElementById("name").value;
+  const endpoint = mode === "login" ? "auth/login" : "auth/register";
+  const body = mode === "login" ? { email: email, password: password } : { email: email, password: password, name: name };
+  const res = await fetch(API_BASE + "/" + endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) { alert(data.error); return; }
+  saveSession(data.token, data.name);
+  window.location.href = "dashboard.html";
+};
+</script>
+</body>
+</html>
