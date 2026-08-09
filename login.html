@@ -1,41 +1,86 @@
 <!DOCTYPE html>
-<html>
-<head><title>Login</title></head>
-<body>
-<h2>Nutritional Insights — Sign In</h2>
-<form id="f">
-  <input id="name" placeholder="Name (register only)"><br><br>
-  <input id="email" placeholder="Email" required><br><br>
-  <input id="password" type="password" placeholder="Password" required><br><br>
-  <button type="submit">Login</button>
-  <button type="button" id="regBtn">Switch to Register</button>
-</form>
-<br>
-<a href="https://diet-analysis-func-bose29445.azurewebsites.net/api/auth/oauth/github/start">Login with GitHub</a>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nutritional Insights — Sign In</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.0/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
+  <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-sm">
+    <h1 class="text-2xl font-bold text-blue-600 mb-1 text-center">Nutritional Insights</h1>
+    <p class="text-sm text-gray-500 mb-6 text-center" id="subtitle">Sign in to view the dashboard</p>
+
+    <div id="errorBox" class="hidden bg-red-100 text-red-700 text-sm p-2 rounded mb-4"></div>
+
+    <form id="f" class="space-y-3">
+      <input id="name" placeholder="Name" class="p-2 border rounded w-full hidden">
+      <input id="email" type="email" placeholder="Email" required class="p-2 border rounded w-full">
+      <input id="password" type="password" placeholder="Password (min 8 characters)" required class="p-2 border rounded w-full">
+      <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white w-full py-2 rounded font-semibold">Login</button>
+    </form>
+
+    <p class="text-sm text-center mt-4 text-gray-600">
+      <span id="toggleText">Don't have an account?</span>
+      <button id="regBtn" class="text-blue-600 font-semibold hover:underline">Register</button>
+    </p>
+
+    <div class="flex items-center gap-2 my-4">
+      <div class="h-px bg-gray-300 flex-1"></div>
+      <span class="text-xs text-gray-400">OR</span>
+      <div class="h-px bg-gray-300 flex-1"></div>
+    </div>
+
+    <a href="https://diet-analysis-func-bose29445.azurewebsites.net/api/auth/oauth/github/start"
+       class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white w-full py-2 rounded font-semibold">
+      Login with GitHub
+    </a>
+  </div>
 
 <script src="auth.js"></script>
 <script>
 let mode = "login";
-document.getElementById("regBtn").onclick = function() {
+const nameField = document.getElementById("name");
+const submitBtn = document.getElementById("submitBtn");
+const toggleText = document.getElementById("toggleText");
+const regBtn = document.getElementById("regBtn");
+const subtitle = document.getElementById("subtitle");
+const errorBox = document.getElementById("errorBox");
+
+regBtn.onclick = function() {
   mode = mode === "login" ? "register" : "login";
-  document.getElementById("regBtn").textContent = mode === "login" ? "Switch to Register" : "Switch to Login";
+  nameField.classList.toggle("hidden", mode === "login");
+  submitBtn.textContent = mode === "login" ? "Login" : "Create account";
+  toggleText.textContent = mode === "login" ? "Don't have an account?" : "Already have an account?";
+  regBtn.textContent = mode === "login" ? "Register" : "Login";
+  subtitle.textContent = mode === "login" ? "Sign in to view the dashboard" : "Create an account to get started";
+  errorBox.classList.add("hidden");
 };
+
 document.getElementById("f").onsubmit = async function(e) {
   e.preventDefault();
-  const email = document.getElementById("email").value;
+  errorBox.classList.add("hidden");
+  const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
-  const name = document.getElementById("name").value;
-  const endpoint = mode === "login" ? "auth/login" : "auth/register";
-  const body = mode === "login" ? { email: email, password: password } : { email: email, password: password, name: name };
-  const res = await fetch(API_BASE + "/" + endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  const data = await res.json();
-  if (!res.ok) { alert(data.error); return; }
-  saveSession(data.token, data.name);
-  window.location.href = "dashboard.html";
+  const name = document.getElementById("name").value.trim();
+
+  try {
+    const endpoint = mode === "login" ? "auth/login" : "auth/register";
+    const body = mode === "login" ? { email: email, password: password } : { email: email, password: password, name: name };
+    const res = await fetch(API_BASE + "/" + endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong");
+    saveSession(data.token, data.name);
+    window.location.href = "dashboard.html";
+  } catch (err) {
+    errorBox.textContent = err.message;
+    errorBox.classList.remove("hidden");
+  }
 };
 </script>
 </body>
