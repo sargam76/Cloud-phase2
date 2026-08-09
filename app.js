@@ -1,4 +1,5 @@
 let currentPage = 1;
+let chartInstances = {};
 let totalPages = 1;
 
 (async function init() {
