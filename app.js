@@ -1,6 +1,7 @@
+const API_BASE = "https://diet-analysis-func-bose29445.azurewebsites.net/api";
 let currentPage = 1;
-let chartInstances = {};
 let totalPages = 1;
+let chartInstances = {};
 
 (async function init() {
   const user = await requireAuth();
@@ -67,7 +68,8 @@ async function loadInsights() {
 }
 
 function renderBarChart(avgMacros) {
-  new Chart(document.getElementById("barChart"), {
+  if (chartInstances.bar) chartInstances.bar.destroy();
+  chartInstances.bar = new Chart(document.getElementById("barChart"), {
     type: "bar",
     data: {
       labels: avgMacros.map(function(d) { return d.Diet_type; }),
@@ -82,6 +84,7 @@ function renderBarChart(avgMacros) {
 }
 
 function renderScatterPlot(topProtein) {
+  if (chartInstances.scatter) chartInstances.scatter.destroy();
   const groups = {};
   topProtein.forEach(function(r) {
     groups[r.diet_type] = groups[r.diet_type] || [];
@@ -95,7 +98,7 @@ function renderScatterPlot(topProtein) {
       backgroundColor: colors[i % colors.length]
     };
   });
-  new Chart(document.getElementById("scatterPlot"), {
+  chartInstances.scatter = new Chart(document.getElementById("scatterPlot"), {
     type: "scatter",
     data: { datasets: datasets },
     options: { responsive: true, plugins: { legend: { position: "bottom" } } }
@@ -113,7 +116,8 @@ function renderHeatmap(avgMacros) {
 }
 
 function renderPieChart(dietCounts) {
-  new Chart(document.getElementById("pieChart"), {
+  if (chartInstances.pie) chartInstances.pie.destroy();
+  chartInstances.pie = new Chart(document.getElementById("pieChart"), {
     type: "pie",
     data: {
       labels: dietCounts.map(function(d) { return d.Diet_type; }),
