@@ -1,4 +1,3 @@
-const API_BASE = "https://diet-analysis-func-bose29445.azurewebsites.net/api";
 let currentPage = 1;
 let totalPages = 1;
 let chartInstances = {};
